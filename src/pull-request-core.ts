@@ -10,7 +10,6 @@ export function issuePullRequestWithToken(
     { pullRequest, changesetCommit }: PullRequestWithChangesetCommit,
     githubAccessToken: string
 ): Promise<Octokit.PullsCreateResponse> {
-
     const octokit = new Octokit({
         auth: githubAccessToken
     });
@@ -232,6 +231,4 @@ export function issuePullRequestWithToken(
                 );
         });
     }
-
-
 }
