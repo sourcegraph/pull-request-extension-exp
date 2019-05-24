@@ -35,6 +35,8 @@
   "license": "MIT",
   "main": "dist/pull-request.js",
   "scripts": {
+    "prettier": "prettier '**/{*.{js?(on),ts?(x),graphql,md,scss},.*.js?(on)}' --write --list-different --config prettier.config.js",
+    "prettier-check": "npm run prettier -- --write=false",
     "tslint": "tslint -p tsconfig.json './src/**/*.ts'",
     "typecheck": "tsc -p tsconfig.json",
     "build": "parcel build --out-file dist/pull-request.js src/pull-request.ts",
@@ -54,20 +56,22 @@
     "last 1 Safari versions"
   ],
   "devDependencies": {
+    "@sourcegraph/prettierrc": "^3.0.1",
     "@sourcegraph/tsconfig": "^4.0.0",
     "@sourcegraph/tslint-config": "^13.2.0",
     "@types/jest": "^24.0.13",
     "jest": "^24.8.0",
+    "jest-cli": "^24.8.0",
     "lnfs-cli": "^2.1.0",
     "mkdirp": "^0.5.1",
     "parcel-bundler": "^1.12.3",
+    "prettier": "^1.17.1",
     "sourcegraph": "^23.0.1",
     "ts-jest": "^24.0.2",
     "tslint": "^5.16.0",
     "typescript": "^3.4.5"
   },
   "dependencies": {
-    "@octokit/rest": "^16.26.0",
-    "jest-cli": "^24.8.0"
+    "@octokit/rest": "^16.26.0"
   }
 }
