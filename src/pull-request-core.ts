@@ -1,57 +1,44 @@
-import Octokit, { GitUpdateRefResponse } from '@octokit/rest';
+import Octokit, { GitUpdateRefResponse } from '@octokit/rest'
 
-import {
-    PullRequest,
-    PullRequestWithChangesetCommit,
-    SourceFile
-} from './types';
+import { PullRequest, PullRequestWithChangesetCommit, SourceFile } from './types'
 
-export function issuePullRequestWithToken(
-    { pullRequest, changesetCommit }: PullRequestWithChangesetCommit,
-    githubAccessToken: string
-): Promise<Octokit.PullsCreateResponse> {
-    const octokit = new Octokit({
-        auth: githubAccessToken
-    });
+class Client {
+    private octokit: Octokit
 
-    return Promise.resolve(issuePullRequest({ pullRequest, changesetCommit }));
-
-    function issuePullRequest({
-        pullRequest: pr,
-        changesetCommit: cs
-    }: PullRequestWithChangesetCommit): Promise<Octokit.PullsCreateResponse> {
-        return Promise.resolve(
-            getCommitBranchSha(
-                pr.sourceOwner,
-                pr.sourceRepo,
-                pr.destinationBranch,
-                pr.sourceBranch
-            )
-                .then(commitBranchSha =>
-                    createTree(
-                        pr.sourceOwner,
-                        pr.sourceRepo,
-                        commitBranchSha,
-                        cs.sourceFiles
-                    )
-                )
-                .then(([treeSha, commitBranchSha]) =>
-                    pushCommit(
-                        pr.sourceOwner,
-                        pr.sourceRepo,
-                        pr.sourceBranch,
-                        commitBranchSha,
-                        treeSha,
-                        cs.authorName,
-                        cs.authorEmail,
-                        cs.commitMessage
-                    )
-                )
-                .then(_ => createPullRequest(pr))
-        );
+    constructor(gitHubAccessToken: string) {
+        this.octokit = new Octokit({
+            auth: gitHubAccessToken,
+        })
     }
 
-    function createPullRequest({
+    public async issuePullRequest({
+        pullRequest: pr,
+        changesetCommit: cs,
+    }: PullRequestWithChangesetCommit): Promise<Octokit.PullsCreateResponse> {
+        const { sha: commitBranchSha } = await this.getCommitBranchSha(
+            pr.sourceOwner,
+            pr.sourceRepo,
+            pr.destinationBranch,
+            pr.sourceBranch
+        )
+
+        const { sha: treeSha } = await this.createTree(pr.sourceOwner, pr.sourceRepo, commitBranchSha, cs.sourceFiles)
+
+        await this.pushCommit(
+            pr.sourceOwner,
+            pr.sourceRepo,
+            pr.sourceBranch,
+            commitBranchSha,
+            treeSha,
+            cs.authorName,
+            cs.authorEmail,
+            cs.commitMessage
+        )
+
+        return await this.createPullRequest(pr)
+    }
+
+    private async createPullRequest({
         sourceOwner,
         sourceRepo,
         destinationBranch,
@@ -61,38 +48,36 @@ export function issuePullRequestWithToken(
         destinationOwner,
         destinationRepo,
         maintainerCanModify,
-        draft
+        draft,
     }: PullRequest): Promise<Octokit.PullsCreateResponse> {
         if (destinationOwner && destinationOwner !== sourceOwner) {
-            destinationBranch = `${sourceOwner}:${destinationBranch}`;
+            destinationBranch = `${sourceOwner}:${destinationBranch}`
         } else {
-            destinationOwner = sourceOwner;
+            destinationOwner = sourceOwner
         }
 
         if (!destinationRepo) {
-            destinationRepo = sourceRepo;
+            destinationRepo = sourceRepo
         }
 
-        return Promise.resolve(
-            octokit.pulls
-                .create({
-                    owner: destinationOwner,
-                    repo: destinationRepo,
-                    title: subject,
-                    body: description,
-                    head: sourceBranch,
-                    base: destinationBranch,
-                    maintainer_can_modify: maintainerCanModify,
-                    draft
-                })
-                .then(({ data }) => data)
-        );
+        const { data: pullResponse } = await this.octokit.pulls.create({
+            owner: destinationOwner,
+            repo: destinationRepo,
+            title: subject,
+            body: description,
+            head: sourceBranch,
+            base: destinationBranch,
+            maintainer_can_modify: maintainerCanModify,
+            draft,
+        })
+
+        return pullResponse
     }
 
     /**
      * Pushes a commit of treeSha to commitBranch and returns the response.
      */
-    function pushCommit(
+    private async pushCommit(
         owner: string,
         repo: string,
         commitBranch: string,
@@ -102,133 +87,113 @@ export function issuePullRequestWithToken(
         authorEmail: string,
         commitMessage: string
     ): Promise<GitUpdateRefResponse> {
-        return Promise.resolve(
-            octokit.git
-                .getCommit({
-                    owner,
-                    repo,
-                    commit_sha: commitBranchSha
-                })
-                .then(({ data }) =>
-                    octokit.git.createCommit({
-                        owner,
-                        repo,
-                        message: commitMessage,
-                        tree: treeSha,
-                        author: {
-                            name: authorName,
-                            email: authorEmail,
-                            date: new Date().toISOString()
-                        },
-                        parents: [data.sha]
-                    })
-                )
-                .then(({ data }) =>
-                    // update the branch ref to point to the created commit
-                    octokit.git.updateRef({
-                        owner,
-                        repo,
-                        ref: 'heads/' + commitBranch,
-                        sha: data.sha
-                    })
-                )
-                .then(({ data }) => data)
-        );
+        const { data: parentCommit } = await this.octokit.git.getCommit({
+            owner,
+            repo,
+            commit_sha: commitBranchSha,
+        })
+
+        const { data: createdCommit } = await this.octokit.git.createCommit({
+            owner,
+            repo,
+            message: commitMessage,
+            tree: treeSha,
+            author: {
+                name: authorName,
+                email: authorEmail,
+                date: new Date().toISOString(),
+            },
+            parents: [parentCommit.sha],
+        })
+
+        const { data: ref } = await this.octokit.git.updateRef({
+            owner,
+            repo,
+            ref: 'heads/' + commitBranch,
+            sha: createdCommit.sha,
+        })
+
+        return ref
     }
 
     /**
      * Creates a tree from the provided commitBranchSha ref for sourceFiles and returns the sha.
      */
-    function createTree(
+    private async createTree(
         owner: string,
         repo: string,
         commitBranchSha: string,
         sourceFiles: SourceFile[]
-    ): Promise<string[]> {
-        const tree = sourceFiles.map<Octokit.GitCreateTreeParamsTree>(
-            ({ path, content }) => ({
-                path,
-                content,
-                type: 'blob',
-                mode: '100644'
-            })
-        );
-        return Promise.resolve(
-            octokit.git
-                .createTree({
-                    owner,
-                    repo,
-                    tree,
-                    base_tree: commitBranchSha
-                })
-                .then(({ data }) => [data.sha, commitBranchSha])
-        );
+    ): Promise<{ sha: string }> {
+        const tree = sourceFiles.map<Octokit.GitCreateTreeParamsTree>(({ path, content }) => ({
+            path,
+            content,
+            type: 'blob',
+            mode: '100644',
+        }))
+        const { data } = await this.octokit.git.createTree({
+            owner,
+            repo,
+            tree,
+            base_tree: commitBranchSha,
+        })
+
+        return { sha: data.sha }
     }
 
     /** Creates a a commitBranch from baseBranch and returns the sha. */
-    function createCommitBranch(
+    private async createCommitBranch(
         owner: string,
         repo: string,
         baseBranch: string,
         commitBranch: string
-    ): Promise<string> {
-        return Promise.resolve(
-            octokit.git
-                .getRef({
-                    owner,
-                    repo,
-                    ref: 'heads/' + baseBranch
-                })
-                .then(({ data }) =>
-                    octokit.git.createRef({
-                        owner,
-                        repo,
-                        ref: 'refs/heads/' + commitBranch,
-                        sha: data.object.sha
-                    })
-                )
-                .then(({ data }) => data.object.sha)
-        );
+    ): Promise<{ sha: string }> {
+        const { data: baseBranchRef } = await this.octokit.git.getRef({
+            owner,
+            repo,
+            ref: 'heads/' + baseBranch,
+        })
+        const { data: commitBranchRef } = await this.octokit.git.createRef({
+            owner,
+            repo,
+            ref: 'refs/heads/' + commitBranch,
+            sha: baseBranchRef.object.sha,
+        })
+        return { sha: commitBranchRef.object.sha }
     }
 
     /**
      * Returns the commit branch sha ref (the one we will PR) if it exists, or creates it from the base branch and returns it.
      */
-    function getCommitBranchSha(
+    private async getCommitBranchSha(
         owner: string,
         repo: string,
         baseBranch: string,
         commitBranch: string
-    ): Promise<string> {
-        return new Promise((resolve, reject) => {
-            octokit.git
-                .getRef({
-                    owner,
-                    repo,
-                    ref: 'heads/' + commitBranch
-                })
-                .then(
-                    ({ data }) => {
-                        // Branch exists.
-                        resolve(data.object.sha);
-                    },
-                    ({ status: status }) => {
-                        if (status === 404) {
-                            // Branch does not exist; create it.
-                            resolve(
-                                createCommitBranch(
-                                    owner,
-                                    repo,
-                                    baseBranch,
-                                    commitBranch
-                                )
-                            );
-                        }
-                        reject(
-                            'Error looking up or creating branch. Is your GitHub token authorized?'
-                        );
-                    }
-                );
-        });
+    ): Promise<{ sha: string }> {
+        try {
+            const { data } = await this.octokit.git.getRef({
+                owner,
+                repo,
+                ref: 'heads/' + commitBranch,
+            })
+
+            return data.object.sha
+        } catch ({ status }) {
+            // branch does not exist; create it.
+            if (status === 404) {
+                return await this.createCommitBranch(owner, repo, baseBranch, commitBranch)
+            }
+            throw new Error('Error looking up or creating branch. Is your GitHub token authorized?')
+        }
     }
+}
+
+export async function issuePullRequestWithToken(
+    { pullRequest, changesetCommit }: PullRequestWithChangesetCommit,
+    gitHubAccessToken: string
+): Promise<Octokit.PullsCreateResponse> {
+    const client = new Client(gitHubAccessToken)
+
+    return await client.issuePullRequest({ pullRequest, changesetCommit })
 }

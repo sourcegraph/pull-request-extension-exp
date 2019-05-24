@@ -1,5 +1,5 @@
-import * as sourcegraph from 'sourcegraph';
-import { issuePullRequestWithToken } from './pull-request-core';
+import * as sourcegraph from 'sourcegraph'
+import { issuePullRequestWithToken } from './pull-request-core'
 
 /**
  * The activate function is called when one of the extensions `activateEvents`
@@ -14,15 +14,10 @@ export function activate(ctx: sourcegraph.ExtensionContext): void {
     //    return;
     // }
 
-    const gitHubAccessToken = 'YOUR_GH_TOKEN';
+    const gitHubAccessToken = 'YOUR_GH_TOKEN'
     ctx.subscriptions.add(
-        sourcegraph.commands.registerCommand(
-            'pr.issuePullRequest',
-            (pullRequest, changesetCommit) =>
-                issuePullRequestWithToken(
-                    { pullRequest, changesetCommit },
-                    gitHubAccessToken
-                )
+        sourcegraph.commands.registerCommand('pr.issuePullRequest', (pullRequest, changesetCommit) =>
+            issuePullRequestWithToken({ pullRequest, changesetCommit }, gitHubAccessToken)
         )
-    );
+    )
 }
