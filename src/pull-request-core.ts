@@ -3,7 +3,7 @@ import Octokit, { GitUpdateRefResponse } from '@octokit/rest'
 import { PullRequest, PullRequestWithChangesetCommit, SourceFile } from './types'
 
 class Client {
-    private octokit: Octokit
+    private readonly octokit: Octokit
 
     constructor(gitHubAccessToken: string) {
         this.octokit = new Octokit({
