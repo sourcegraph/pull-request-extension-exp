@@ -1,4 +1,4 @@
-import { app, commands, configuration, ExtensionContext, search, NotificationType } from 'sourcegraph'
+import { app, commands, configuration, ExtensionContext, NotificationType, search } from 'sourcegraph'
 import { runCodemodQuery } from './codemod'
 import { issuePullRequestWithToken } from './pull-request-core'
 import { bundlePullRequests } from './user-input-sequence'
