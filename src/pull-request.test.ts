@@ -1,7 +1,7 @@
 import { issuePullRequestWithToken } from './pull-request-core'
-import { ChangesetCommit, PullRequest } from './types'
+import { PullRequest } from './types'
 
-const pullRequest: PullRequest = {
+const pullRequest: PullRequest.GitHubPullRequest = {
     sourceOwner: 'rvantonder',
     sourceRepo: 'test-auto-pr',
     destinationBranch: 'master',
@@ -10,14 +10,16 @@ const pullRequest: PullRequest = {
     description: 'PR description',
 }
 
-const changesetCommit: ChangesetCommit = {
+const changesetCommit: PullRequest.ChangesetCommit = {
     sourceFiles: [
         { path: 'a/b/c/hello.md', content: 'world' },
         { path: 'README.md', content: '# test-auto-pr\nblah blah' },
     ],
-    authorName: 'Rijnard van Tonder',
-    authorEmail: 'rvantonder@gmail.com',
-    commitMessage: 'commit message',
+    commitMetaData: {
+        authorName: 'Rijnard van Tonder',
+        authorEmail: 'rvantonder@gmail.com',
+        commitMessage: 'commit message',
+    },
 }
 
 test('PR fails on invalid token', () =>
