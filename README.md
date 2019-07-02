@@ -9,7 +9,7 @@ The fields below can be set in your configuration. If they are not set, and do n
   "pr.description": "",
 ``` 
 
-```
+```ts
 export interface Overrides {
     /**
      * An input box is prompted if not specified.
