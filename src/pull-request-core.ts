@@ -1,6 +1,6 @@
 import Octokit, { GitUpdateRefResponse } from '@octokit/rest'
-
-import { PullRequest, PullRequestWithChangesetCommit, SourceFile } from './types'
+import { app, NotificationType } from 'sourcegraph'
+import { PullRequest, SourceFile } from './types'
 
 class Client {
     private readonly octokit: Octokit
@@ -8,13 +8,17 @@ class Client {
     constructor(gitHubAccessToken: string) {
         this.octokit = new Octokit({
             auth: gitHubAccessToken,
+            headers: {
+                // Draft PR needs shadow-cat-preview header
+                accept: 'application/vnd.github.shadow-cat-preview+json, application/vnd.github.v3+json',
+            },
         })
     }
 
     public async issuePullRequest({
         pullRequest: pr,
         changesetCommit: cs,
-    }: PullRequestWithChangesetCommit): Promise<Octokit.PullsCreateResponse> {
+    }: PullRequest.PullRequestWithChangesetCommit): Promise<Octokit.PullsCreateResponse | undefined> {
         const { sha: commitBranchSha } = await this.getCommitBranchSha(
             pr.sourceOwner,
             pr.sourceRepo,
@@ -30,9 +34,9 @@ class Client {
             pr.sourceBranch,
             commitBranchSha,
             treeSha,
-            cs.authorName,
-            cs.authorEmail,
-            cs.commitMessage
+            cs.commitMetaData.authorName,
+            cs.commitMetaData.authorEmail,
+            cs.commitMetaData.commitMessage
         )
 
         return await this.createPullRequest(pr)
@@ -49,7 +53,7 @@ class Client {
         destinationRepo,
         maintainerCanModify,
         draft,
-    }: PullRequest): Promise<Octokit.PullsCreateResponse> {
+    }: PullRequest.GitHubPullRequest): Promise<Octokit.PullsCreateResponse | undefined> {
         if (destinationOwner && destinationOwner !== sourceOwner) {
             destinationBranch = `${sourceOwner}:${destinationBranch}`
         } else {
@@ -60,18 +64,36 @@ class Client {
             destinationRepo = sourceRepo
         }
 
-        const { data: pullResponse } = await this.octokit.pulls.create({
-            owner: destinationOwner,
-            repo: destinationRepo,
-            title: subject,
-            body: description,
-            head: sourceBranch,
-            base: destinationBranch,
-            maintainer_can_modify: maintainerCanModify,
-            draft,
-        })
+        try {
+            const { data: pullResponse } = await this.octokit.pulls.create({
+                owner: destinationOwner,
+                repo: destinationRepo,
+                title: subject,
+                body: description,
+                head: sourceBranch,
+                base: destinationBranch,
+                maintainer_can_modify: maintainerCanModify,
+                draft,
+            })
 
-        return pullResponse
+            return pullResponse
+        } catch (e) {
+            if (e.status && e.status === 422) {
+                // The PR already exists.
+                if (!app.activeWindow) {
+                    throw new Error('No active window')
+                }
+                // Although the PR already exists, GH won't tell me its number in this response.
+                // It's not in the error message. Yet GH also decides to
+                // update the commit despite returning 422. What? ¯\_(ツ)_/¯
+                app.activeWindow.showNotification(
+                    `PR updated with new commit (branch already exists).`,
+                    NotificationType.Warning
+                )
+                return undefined
+            }
+            throw new Error(`Error: ${JSON.stringify(e)}`)
+        }
     }
 
     /**
@@ -111,6 +133,7 @@ class Client {
             repo,
             ref: 'heads/' + commitBranch,
             sha: createdCommit.sha,
+            force: false,
         })
 
         return ref
@@ -131,6 +154,7 @@ class Client {
             type: 'blob',
             mode: '100644',
         }))
+
         const { data } = await this.octokit.git.createTree({
             owner,
             repo,
@@ -153,6 +177,7 @@ class Client {
             repo,
             ref: 'heads/' + baseBranch,
         })
+
         const { data: commitBranchRef } = await this.octokit.git.createRef({
             owner,
             repo,
@@ -178,9 +203,9 @@ class Client {
                 ref: 'heads/' + commitBranch,
             })
 
-            return data.object.sha
+            return { sha: data.object.sha }
         } catch ({ status }) {
-            // branch does not exist; create it.
+            // if branch does not exist, create it.
             if (status === 404) {
                 return await this.createCommitBranch(owner, repo, baseBranch, commitBranch)
             }
@@ -190,10 +215,20 @@ class Client {
 }
 
 export async function issuePullRequestWithToken(
-    { pullRequest, changesetCommit }: PullRequestWithChangesetCommit,
+    { pullRequest, changesetCommit }: PullRequest.PullRequestWithChangesetCommit,
     gitHubAccessToken: string
-): Promise<Octokit.PullsCreateResponse> {
+): Promise<void> {
     const client = new Client(gitHubAccessToken)
-
-    return await client.issuePullRequest({ pullRequest, changesetCommit })
+    try {
+        const result = await client.issuePullRequest({ pullRequest, changesetCommit })
+        if (!app.activeWindow) {
+            throw new Error('No active window')
+        }
+        if (result && result.html_url) {
+            app.activeWindow.showNotification(`😎 PR Created:\n${result.html_url}`, NotificationType.Success)
+        }
+        return
+    } catch (e) {
+        throw new Error(`Unhandled error in GH response\n${JSON.stringify(e)}`)
+    }
 }

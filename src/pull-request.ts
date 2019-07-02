@@ -1,23 +1,35 @@
-import * as sourcegraph from 'sourcegraph'
+import { app, commands, configuration, ExtensionContext, NotificationType, search } from 'sourcegraph'
+import { runCodemodQuery } from './codemod'
 import { issuePullRequestWithToken } from './pull-request-core'
+import { bundlePullRequests } from './user-input-sequence'
 
-/**
- * The activate function is called when one of the extensions `activateEvents`
- * conditions in package.json are satisfied.
- */
-export function activate(ctx: sourcegraph.ExtensionContext): void {
-    // const gitHubAccessToken = sourcegraph.configuration
-    //    .get()
-    //    .get('github.pr.accessToken')
-    // if (!gitHubAccessToken) {
-    //    console.log('Could not read github.pr.accessToken from configuration')
-    //    return;
-    // }
-
-    const gitHubAccessToken = 'YOUR_GH_TOKEN'
+export function activate(ctx: ExtensionContext): void {
+    // store the query string in configuration after a search. It's used to execute a GQL codemod command when we're ready to PR.
     ctx.subscriptions.add(
-        sourcegraph.commands.registerCommand('pr.issuePullRequest', (pullRequest, changesetCommit) =>
-            issuePullRequestWithToken({ pullRequest, changesetCommit }, gitHubAccessToken)
-        )
+        search.registerQueryTransformer({
+            transformQuery: async query => {
+                await commands.executeCommand('updateConfiguration', 'pr.codemodQuery', query)
+                return query
+            },
+        })
+    )
+    ctx.subscriptions.add(
+        commands.registerCommand('pr.issuePullRequest', async (pullRequest, changesetCommit) => {
+            const query = configuration.get().value['pr.codemodQuery']
+            if (query) {
+                if (!app.activeWindow) {
+                    throw new Error('No active window')
+                }
+                app.activeWindow.showNotification(`🔥 Preparing your PR, hang on hot second`, NotificationType.Info)
+                const sources = await runCodemodQuery(query)
+                const bundles = await bundlePullRequests(sources)
+                app.activeWindow.showNotification(`⚙️ The gears are turning...`, NotificationType.Info)
+                for (const { pullRequestWithChangesetCommit, gitHubAccessToken } of bundles) {
+                    await issuePullRequestWithToken(pullRequestWithChangesetCommit, gitHubAccessToken)
+                }
+                return
+            }
+            return
+        })
     )
 }

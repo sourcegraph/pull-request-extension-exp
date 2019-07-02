@@ -21,13 +21,12 @@
       }
     ],
     "menus": {
-      "editor/title": [
+      "commandPalette": [
         {
           "action": "pr.issuePullRequest",
-          "when": "resource"
+          "when": "true"
         }
-      ],
-      "commandPalette": []
+      ]
     },
     "configuration": {}
   },
@@ -48,6 +47,12 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "automock": false,
+    "setupFiles": [
+      "./setupJest.js"
+    ]
   },
   "browserslist": [
     "last 1 Chrome versions",
@@ -72,6 +77,11 @@
     "typescript": "^3.4.5"
   },
   "dependencies": {
-    "@octokit/rest": "^16.26.0"
+    "@octokit/rest": "^16.26.0",
+    "@types/diff": "^4.0.2",
+    "@types/diff-match-patch": "^1.0.32",
+    "diff": "^4.0.1",
+    "diff-match-patch": "^1.0.4",
+    "jest-fetch-mock": "^2.1.2"
   }
 }
