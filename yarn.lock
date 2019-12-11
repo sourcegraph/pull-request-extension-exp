@@ -999,6 +999,11 @@
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-0.7.0.tgz#9a06f4f137ee84d7df0460c1fdb1135ffa6c50fd"
   integrity sha512-ONhaKPIufzzrlNbqtWFFd+jlnemX6lJAgq9ZeiZtS7I1PIf/la7CW4m83rTXRnVnsMbW2k56pGYu7AUFJD9Pow==
 
+"@sourcegraph/prettierrc@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@sourcegraph/prettierrc/-/prettierrc-3.0.1.tgz#e1db0046dca3c5e770d0f2ac68bbd794fee37138"
+  integrity sha512-Xyfsk2zLbtJXjgzPC5Q91AdoZ9YECB7Z5pyUCoYb36zqClBRkN2F/VoT+04pLqBf9xsr9uKfJoaf/WGGngLlVg==
+
 "@sourcegraph/tsconfig@^4.0.0":
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/@sourcegraph/tsconfig/-/tsconfig-4.0.0.tgz#dd2a406f90760bb789fd89fde4bd0a8d681f2767"
@@ -1051,6 +1056,11 @@
   version "1.0.32"
   resolved "https://registry.yarnpkg.com/@types/diff-match-patch/-/diff-match-patch-1.0.32.tgz#d9c3b8c914aa8229485351db4865328337a3d09f"
   integrity sha512-bPYT5ECFiblzsVzyURaNhljBH2Gh1t9LowgUwciMrNAhFewLkHT2H0Mto07Y4/3KCOGZHRQll3CTtQZ0X11D/A==
+
+"@types/diff@^4.0.2":
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/@types/diff/-/diff-4.0.2.tgz#2e9bb89f9acc3ab0108f0f3dc4dbdcf2fff8a99c"
+  integrity sha512-mIenTfsIe586/yzsyfql69KRnA75S8SVXQbTLpDejRrjH0QSJcpu3AUOi/Vjnt9IOsXKxPhJfGpQUNMueIU1fQ==
 
 "@types/istanbul-lib-coverage@*", "@types/istanbul-lib-coverage@^2.0.0":
   version "2.0.1"
@@ -2410,6 +2420,11 @@ diff@^3.2.0:
   version "3.5.0"
   resolved "https://registry.yarnpkg.com/diff/-/diff-3.5.0.tgz#800c0dd1e0a8bfbc95835c202ad220fe317e5a12"
   integrity sha512-A46qtFgd+g7pDZinpnwiRJtxbC1hpgf0uzP3iG89scHk0AUC7A1TGxf5OiiOUv/JMZR8GOt8hL900hV0bOy5xA==
+
+diff@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/diff/-/diff-4.0.1.tgz#0c667cb467ebbb5cea7f14f135cc2dba7780a8ff"
+  integrity sha512-s2+XdvhPCOF01LRQBC8hf4vhbVmI2CGS5aZnxLJlT5FtdhPCDFq80q++zK2KlrVorVDdL5BOGZ/VfLrVtYNF+Q==
 
 diffie-hellman@^5.0.0:
   version "5.0.3"
@@ -6099,9 +6114,9 @@ safe-regex@^1.1.0:
   integrity sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==
 
 safer-eval@^1.3.0:
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/safer-eval/-/safer-eval-1.3.3.tgz#0309e9fcc0609e66c1b599fd0d4772132b260ca8"
-  integrity sha512-j/qb0rtnwTp5V1D7nR0Ns/14HU8OiHPaoZNJhM+Lfmv1nbXZCXG9LHaVW157agEocdSVAeeRNddK/yuWfalzGQ==
+  version "1.3.6"
+  resolved "https://registry.yarnpkg.com/safer-eval/-/safer-eval-1.3.6.tgz#ee51e3348c39fdc4117a47dfb4b69df56a2e40cf"
+  integrity sha512-DN9tBsZgtUOHODzSfO1nGCLhZtxc7Qq/d8/2SNxQZ9muYXZspSh1fO7HOsrf4lcelBNviAJLCxB/ggmG+jV1aw==
   dependencies:
     clones "^1.2.0"
 
