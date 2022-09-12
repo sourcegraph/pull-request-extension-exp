@@ -1,5 +1,14 @@
 # Issue pull requests from Sourcegraph codemod/diff views.
 
+## ⚠️ Deprecation notice
+
+**Sourcegraph extensions have been deprecated with the September 2022 Sourcegraph
+release. [Learn more](https://docs.sourcegraph.com/extensions/deprecation).**
+
+The repo and the docs below are kept to support older Sourcegraph versions.
+
+## Description
+
 The fields below can be set in your configuration. If they are not set, and do not have a sensible default, you'll get an input prompt when issuing a PR (e.g., for a GH access token, author name, etc.). While the PR title and commit will probably differ, it's a good idea to set the things that likely won't change:
 
 ```
